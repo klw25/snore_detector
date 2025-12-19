@@ -2,6 +2,9 @@
 .venv/
 venv/
 
+.venv_coreml/
+venv_coreml/
+
 # Python cache
 __pycache__/
 *.pyc
