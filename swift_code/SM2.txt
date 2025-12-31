@@ -1,0 +1,24 @@
+import CoreML
+
+final class SnoreModel {
+
+    private let model: MLModel
+
+    init() throws {
+        let config = MLModelConfiguration()
+        let modelURL = Bundle.main.url(forResource: "snore_cnn", withExtension: "mlpackage")!
+        self.model = try MLModel(contentsOf: modelURL, configuration: config)
+    }
+
+    func predict(inputAudio: MLMultiArray) throws -> Double {
+
+        let input = try MLDictionaryFeatureProvider(dictionary: [
+            "input_audio": inputAudio
+        ])
+
+        let output = try model.prediction(from: input)
+
+        let score = output.featureValue(for: "var_102")!.doubleValue
+        return score
+    }
+}

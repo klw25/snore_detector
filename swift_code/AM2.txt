@@ -1,0 +1,55 @@
+import AVFoundation
+import CoreML
+
+final class AudioManager {
+
+    private let engine = AVAudioEngine()
+    private let snoreModel: SnoreModel
+
+    init() throws {
+        self.snoreModel = try SnoreModel()
+        setupAudio()
+    }
+
+    private func setupAudio() {
+        let inputNode = engine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+
+        inputNode.installTap(onBus: 0, bufferSize: 2048, format: format) { buffer, _ in
+            self.process(buffer: buffer)
+        }
+
+        try? engine.start()
+    }
+
+    private func process(buffer: AVAudioPCMBuffer) {
+        guard let array = buffer.toMLMultiArray() else { return }
+
+        do {
+            let score = try snoreModel.predict(inputAudio: array)
+            print("Snore score:", score)
+        } catch {
+            print("Prediction error:", error)
+        }
+    }
+}
+
+
+extension AVAudioPCMBuffer {
+
+    func toMLMultiArray() -> MLMultiArray? {
+        guard let channelData = floatChannelData else { return nil }
+
+        let frameLength = Int(self.frameLength)
+        let array = try? MLMultiArray(
+            shape: [NSNumber(value: frameLength)],
+            dataType: .float32
+        )
+
+        for i in 0..<frameLength {
+            array?[i] = NSNumber(value: channelData[0][i])
+        }
+
+        return array
+    }
+}
